@@ -6,6 +6,8 @@ type Palabra = String
 type Verso = String
 type Estrofa = [Verso]
 type Rima = Palabra -> Palabra -> Bool
+type Patron = Estrofa -> Bool
+type Conjugacion = Verso -> Verso -> Bool
 type Artista = String --Solamente interesa el nombre
 
 esVocal :: Char -> Bool
@@ -48,22 +50,66 @@ riman palabraV1 palabraV2
     |rimanAsonante palabraV1 palabraV2 || rimanConsonante palabraV1 palabraV2 = True
     |otherwise = False
 
---Funciones punto 1
+esSimple :: Number -> Number -> Patron --Se usa en simple
+esSimple p1 p2 estrofa = cumplen obtenerUltimaPalabra palabrasRiman ((!!) estrofa p1) ((!!) estrofa p2)
+
+mismaPalabraAnafora :: [Palabra] -> Bool
+mismaPalabraAnafora (x:xs) = all (==x) xs
+
+esAnafora :: Patron --Se usa en anafora
+esAnafora estrofa = mismaPalabraAnafora (map (head.words) estrofa)
+
+esCombinaDos :: Patron -> Patron -> Patron
+esCombinaDos patron1 patron2 estrofa = patron1 estrofa && patron2 estrofa
+
+palabraEsdrujula :: Palabra -> Bool
+palabraEsdrujula palabra = any tieneTilde (take (length palabra - 2) palabra)
+
+sonEsdrujula :: [Palabra] -> Bool
+sonEsdrujula = all palabraEsdrujula 
+
+esEsdrujula :: Patron
+esEsdrujula estrofa = sonEsdrujula (map (last.words) estrofa)
+
+esCadena :: Conjugacion -> Estrofa -> [Bool]
+esCadena _ [] = []
+esCadena conjugacion (x:xs) 
+    |length (x:xs) > 1 = conjugacion x (head xs):esCadena conjugacion xs
+    |otherwise = []
+
+--Funciones Rimas
 obtenerUltimaPalabra :: Verso -> Palabra
 obtenerUltimaPalabra verso = reverse(recorrerVerso (reverse verso) 1)
 
 palabrasRiman :: Rima
 palabrasRiman = riman 
 
---Funciones punto 2
-conjugacionPorRimas :: Verso -> Verso -> Bool
+--Funciones Conjugaciones
+conjugacionPorRimas :: Conjugacion
 conjugacionPorRimas verso1 verso2 = riman (obtenerUltimaPalabra verso1) (obtenerUltimaPalabra verso2)
 
-conjugacionHaciendoAnadiplosis :: Verso -> Verso -> Bool
+conjugacionHaciendoAnadiplosis :: Conjugacion
 conjugacionHaciendoAnadiplosis verso1 verso2 = (last.words) verso1 == (head.words) verso2
+
+--Funciones Patrones
+simple :: Number -> Number -> Patron
+simple = esSimple 
+
+anafora :: Patron
+anafora = esAnafora 
+
+esdrujulas :: Patron
+esdrujulas = esEsdrujula
+
+combinaDos :: Patron -> Patron -> Patron
+combinaDos = esCombinaDos 
+
+cadena :: Conjugacion -> Patron
+cadena conjugacion estrofa = all (== True) (esCadena conjugacion estrofa)
 
 --Funcion del enunciado
 cumplen :: (a -> b) -> (b -> b -> Bool) -> a -> a -> Bool
 cumplen f comp v1 v2 = comp (f v1) (f v2)
+
 
 
